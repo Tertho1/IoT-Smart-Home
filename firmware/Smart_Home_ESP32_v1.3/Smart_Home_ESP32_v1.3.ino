@@ -29,9 +29,11 @@
 #include <WiFiManager.h> // v1.2 — captive portal for client Wi-Fi (no re-flash)
 #include <Preferences.h>
 #include <ElegantOTA.h>   // v1.3 — OTA via http://<IP>/update (browser, phone)
+#include <ESPmDNS.h>      // v1.4 — fixed http://smarthome.local (IP can change)
 
 // ---------- CONFIGURATION ----------
-#define FW_VERSION           "v1.3-ota"   // shown in Serial + GET /api/status, bump on each OTA
+#define FW_VERSION           "v1.4-mdns"   // shown in Serial + GET /api/status, bump on each OTA
+#define MDNS_HOSTNAME        "smarthome"   // fixed link: http://smarthome.local
 #define WIFI_AP_SSID    "SmartHome-ESP32"
 #define WIFI_AP_PASS    "12345678"
 #define WIFI_PORTAL_TIMEOUT 180  // seconds portal stays open
@@ -499,7 +501,14 @@ void setup() {
     Serial.printf("[OTA] End %s — rebooting\n", success ? "success" : "failed");
   });
   server.begin();
-  Serial.printf("[HTTP] Server started @ http://%s/  OTA @ http://%s/update\n", WiFi.localIP().toString().c_str(), WiFi.localIP().toString().c_str());
+  // mDNS fixed name — survives DHCP IP changes; Serial always shows both IP + .local links
+  if (MDNS.begin(MDNS_HOSTNAME)) {
+    MDNS.addService("http", "tcp", 80);
+    Serial.printf("[mDNS] http://%s.local/  OTA @ http://%s.local/update\n", MDNS_HOSTNAME, MDNS_HOSTNAME);
+  } else {
+    Serial.println("[mDNS] responder failed — use IP links below");
+  }
+  Serial.printf("[HTTP] Dashboard @ http://%s/  OTA @ http://%s/update\n", WiFi.localIP().toString().c_str(), WiFi.localIP().toString().c_str());
   if (WiFi.getMode() == WIFI_AP) Serial.printf("[HTTP] AP @ http://%s/  OTA @ http://%s/update\n", WiFi.softAPIP().toString().c_str(), WiFi.softAPIP().toString().c_str());
 }
 

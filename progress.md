@@ -1,6 +1,12 @@
-# Progress Log — ESP32 Smart Home v1.3
+# Progress Log — ESP32 Smart Home v1.4-mdns
 
 > One line per verified step. Details in `TODO.md` phases.
+
+## 2026-09-22 — OTA v1.4-mdns verified (Phase 1.5 done)
+- [x] Added `ESPmDNS smarthome`: Serial always prints `http://smarthome.local/` + `/update` AND `http://<IP>/` + `/update`
+- [x] OTA via PC over WiFi (ESP32 USB-powered by laptop): uploaded `Smart_Home_ESP32_v1.3.ino.bin` (~1MB app only) to `http://192.168.1.106/update`
+- [x] Serial confirms: `[OTA] Start OFF` -> `End success` -> reboot `v1.4-mdns`, relays OFF, WiFi .106, NVS kept, both link sets shown
+- [x] No USB needed anymore; fixed name survives DHCP changes
 
 ## 2026-09-22 — Breadboard baseline + WiFi (Phase 3.2 partial)
 - [x] Procurement unboxed, modules labeled (relay confirmed active-LOW SRD-05VDC-SL-C)
