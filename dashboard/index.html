@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Home — ESP32 Dashboard</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--accent:#38bdf8;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--text:#e2e8f0}
+*{box-sizing:border-box;font-family:system-ui,Segoe UI,Roboto,Arial}
+body{margin:0;background:var(--bg);color:var(--text);padding:16px}
+h1{text-align:center;color:var(--accent);margin:8px 0 4px;letter-spacing:.5px}
+.sub{text-align:center;opacity:.7;margin-bottom:16px;font-size:.9em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:1000px;margin:auto}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.card h2{margin:0 0 12px;font-size:1.05em;color:var(--accent);border-bottom:1px solid #334155;padding-bottom:8px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1f2a3a}
+.row:last-child{border:none}
+.badge{padding:3px 10px;border-radius:999px;font-size:.82em;font-weight:700}
+.ok{background:#14532d;color:#86efac}
+.warn{background:#78350f;color:#fde68a}
+.danger{background:#7f1d1d;color:#fecaca}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:11px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:.15s}
+.on{background:var(--ok);color:#052e16}
+.off{background:#334155;color:var(--text)}
+.btn:active{transform:scale(.97)}
+.mode{width:100%;margin-top:10px}
+select,input{width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:var(--text);margin:4px 0 8px}
+label{font-size:.85em;opacity:.8}
+small{opacity:.6;line-height:1.4}
+.conn{max-width:1000px;margin:0 auto 16px;background:#1e293b;border-radius:12px;padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.conn input{flex:1;min-width:180px}
+.conn button{padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#0f172a;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>🏠 SMART HOME</h1>
+<div class="sub">ESP32 DevKit V1 • <span id="ip">--</span> • <span id="fw">--</span> • <span id="modeLabel">AUTO</span> • Security: <span id="secLabel">DISARMED</span> • <span id="connStatus">● Connecting</span> • <a id="otaLink" href="#" target="_blank" style="color:#38bdf8;text-decoration:none">⚡ OTA Update</a></div>
+
+<div class="conn">
+  <input id="espIp" placeholder="ESP32 IP e.g. 192.168.0.123 (leave empty for same host / mock)">
+  <button onclick="saveIp()">Connect</button>
+  <button onclick="toggleMock()" id="mockBtn" style="background:#334155;color:#e2e8f0">Mock: OFF</button>
+  <small>Tip: When testing without hardware, turn Mock ON. When deployed, enter ESP32 IP and Connect.</small>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>📊 Sensors — Live Status</h2>
+    <div class="row"><span>Temperature</span><b id="temp">-- °C</b></div>
+    <div class="row"><span>Humidity</span><b id="hum">-- %</b></div>
+    <div class="row"><span>Living Motion (PIR1 / GPIO27)</span><span id="pir1" class="badge">--</span></div>
+    <div class="row"><span>Bedroom Motion (PIR2 / GPIO26)</span><span id="pir2" class="badge">--</span></div>
+    <div class="row"><span>Living Light Level (LDR1 / GPIO34)</span><b id="ldr1">--</b></div>
+    <div class="row"><span>Bedroom Light Level (LDR2 / GPIO35)</span><b id="ldr2">--</b></div>
+    <div class="row"><span>Door (Reed / GPIO25)</span><span id="door" class="badge">--</span></div>
+    <div class="row"><span>Gas (MQ-2 / GPIO32)</span><span id="gas" class="badge">--</span></div>
+    <div class="row"><span>MQ-2 Raw (0-4095)</span><b id="mqraw">--</b></div>
+  </div>
+  <div class="card">
+    <h2>💡 Controls — Manual Override</h2>
+    <div class="controls">
+      <button class="btn" id="bLiving" onclick="toggle('living')">Living Light</button>
+      <button class="btn" id="bBed" onclick="toggle('bedroom')">Bedroom Light</button>
+      <button class="btn" id="bFan" onclick="toggle('fan')">Room Fan</button>
+      <button class="btn" id="bExh" onclick="toggle('exhaust')">Kitchen Exhaust</button>
+    </div>
+    <button class="btn mode" id="bMode" onclick="toggle('mode')">Switch to MANUAL</button>
+    <button class="btn mode" id="bSec" onclick="toggle('security')">Security: DISARMED</button>
+    <div class="row" style="margin-top:12px"><span>Buzzer (GPIO23)</span><span id="buz" class="badge">OFF</span></div>
+    <small>AUTO: lights follow PIR+LDR (30s timeout), fan follows 30°C/28°C hysteresis. MANUAL: phone controls all.</small>
+  </div>
+  <div class="card">
+    <h2>⚙️ Thresholds — Tune in Your Room</h2>
+    <label>LDR Dark Threshold (0-4095)</label><input id="ldrTh" type="number" min="0" max="4095">
+    <label>MQ-2 Gas Threshold (0-4095)</label><input id="mqTh" type="number" min="0" max="4095">
+    <label>Temp HIGH °C (fan ON)</label><input id="tHigh" type="number" step="0.5">
+    <label>Temp LOW °C (fan OFF)</label><input id="tLow" type="number" step="0.5">
+    <label>Light Timeout (ms)</label><input id="ltOut" type="number" step="1000">
+    <button class="btn mode on" onclick="saveThresholds()">Save Thresholds</button>
+    <small>LDR: bright ~2500-3500, dark ~200-800. Cover sensor to find your dark value. MQ-2: note clean-air value then set +300. DHT11 far from fan/MQ-2 heater.</small>
+  </div>
+</div>
+
+<script>
+let baseUrl = ''; // e.g. http://192.168.0.123
+let mock = false;
+let mockState = {
+  ip:'192.168.4.1 (mock)', fwVersion:'v1.3-ota (mock)', temperature:28.4, humidity:63, ldr1: 420, ldr2: 2800, mq2: 650,
+  pir1: false, pir2: true, doorOpen: false, gasWarning:false,
+  livingLight:false, bedroomLight:true, roomFan:true, exhaust:false, buzzer:false,
+  modeAuto:true, securityArmed:false, ldrThreshold:1500, mq2Threshold:1800, tempHigh:30, tempLow:28, lightTimeout:30000
+};
+
+function saveIp(){
+  let v=document.getElementById('espIp').value.trim();
+  baseUrl = v ? (v.startsWith('http')? v : 'http://'+v) : '';
+  localStorage.setItem('espBase', baseUrl);
+  fetchStatus();
+}
+function toggleMock(){
+  mock = !mock;
+  document.getElementById('mockBtn').textContent = 'Mock: '+(mock?'ON':'OFF');
+  document.getElementById('mockBtn').style.background = mock? '#22c55e':'#334155';
+  document.getElementById('mockBtn').style.color = mock? '#052e16':'#e2e8f0';
+  fetchStatus();
+}
+(function init(){
+  let s=localStorage.getItem('espBase');
+  if(s){ baseUrl=s; document.getElementById('espIp').value=s.replace('http://','');}
+})();
+
+async function fetchStatus(){
+  let state;
+  let ok=false;
+  if(mock){
+    // animate mock a bit
+    mockState.ldr1 = 300 + Math.floor(Math.random()*400);
+    mockState.temperature = 27 + Math.random()*2;
+    state = {...mockState};
+    ok=true;
+  } else {
+    try{
+      let url = (baseUrl? baseUrl : '') + '/api/status';
+      let r = await fetch(url, {cache:'no-store'});
+      if(!r.ok) throw new Error(r.status);
+      state = await r.json();
+      ok=true;
+    } catch(e){
+      document.getElementById('connStatus').textContent='● Offline — check IP or enable Mock';
+      document.getElementById('connStatus').style.color='#ef4444';
+      return;
+    }
+  }
+  if(ok){
+    document.getElementById('connStatus').textContent='● Live';
+    document.getElementById('connStatus').style.color='#22c55e';
+    render(state);
+  }
+}
+function render(state){
+  document.getElementById('ip').textContent=state.ip;
+  document.getElementById('fw').textContent=state.fwVersion || '--';
+  let base = baseUrl || (state.ip && state.ip !== '--' ? 'http://'+state.ip : '');
+  let ota = document.getElementById('otaLink');
+  if(ota) ota.href = (base ? base : '') + '/update';
+  document.getElementById('temp').textContent=state.temperature!=null? state.temperature.toFixed(1)+' °C' : '--';
+  document.getElementById('hum').textContent=state.humidity!=null? state.humidity.toFixed(0)+' %' : '--';
+  setBadge('pir1', state.pir1? 'MOTION':'None', state.pir1?'warn':'ok');
+  setBadge('pir2', state.pir2? 'MOTION':'None', state.pir2?'warn':'ok');
+  document.getElementById('ldr1').textContent=state.ldr1 + (state.ldr1 < state.ldrThreshold ? ' (DARK)' : ' (BRIGHT)');
+  document.getElementById('ldr2').textContent=state.ldr2 + (state.ldr2 < state.ldrThreshold ? ' (DARK)' : ' (BRIGHT)');
+  document.getElementById('mqraw').textContent=state.mq2;
+  setBadge('door', state.doorOpen? 'OPEN':'CLOSED', state.doorOpen? 'danger':'ok');
+  setBadge('gas', state.gasWarning? 'WARNING':'NORMAL', state.gasWarning? 'danger':'ok');
+  setBadge('buz', state.buzzer? 'ON':'OFF', state.buzzer? 'danger':'ok');
+  document.getElementById('modeLabel').textContent=state.modeAuto? 'AUTO':'MANUAL';
+  document.getElementById('secLabel').textContent=state.securityArmed? 'ARMED':'DISARMED';
+  updBtn('bLiving', state.livingLight, 'Living Light');
+  updBtn('bBed', state.bedroomLight, 'Bedroom Light');
+  updBtn('bFan', state.roomFan, 'Room Fan');
+  updBtn('bExh', state.exhaust, 'Exhaust');
+  document.getElementById('bMode').textContent=state.modeAuto? 'Switch to MANUAL':'Switch to AUTO';
+  document.getElementById('bMode').className='btn mode '+(state.modeAuto?'off':'on');
+  document.getElementById('bSec').textContent='Security: '+(state.securityArmed? 'ARMED':'DISARMED');
+  document.getElementById('bSec').className='btn mode '+(state.securityArmed? 'danger':'off');
+  document.getElementById('ldrTh').value=state.ldrThreshold;
+  document.getElementById('mqTh').value=state.mq2Threshold;
+  document.getElementById('tHigh').value=state.tempHigh;
+  document.getElementById('tLow').value=state.tempLow;
+  document.getElementById('ltOut').value=state.lightTimeout;
+}
+function setBadge(id, text, cls){let e=document.getElementById(id); e.textContent=text; e.className='badge '+cls;}
+function updBtn(id, on, label){let e=document.getElementById(id); e.textContent=label+' '+(on?'[ON]':'[OFF]'); e.className='btn '+(on?'on':'off');}
+async function toggle(what){
+  if(mock){
+    if(what==='living') mockState.livingLight=!mockState.livingLight;
+    if(what==='bedroom') mockState.bedroomLight=!mockState.bedroomLight;
+    if(what==='fan') mockState.roomFan=!mockState.roomFan;
+    if(what==='exhaust') mockState.exhaust=!mockState.exhaust;
+    if(what==='mode') mockState.modeAuto=!mockState.modeAuto;
+    if(what==='security') mockState.securityArmed=!mockState.securityArmed;
+    render(mockState); return;
+  }
+  let url = (baseUrl? baseUrl : '') + '/api/control?'+what+'=toggle';
+  await fetch(url, {method:'POST'});
+  fetchStatus();
+}
+async function saveThresholds(){
+  let p=new URLSearchParams({
+    ldrTh: document.getElementById('ldrTh').value,
+    mqTh: document.getElementById('mqTh').value,
+    tHigh: document.getElementById('tHigh').value,
+    tLow: document.getElementById('tLow').value,
+    ltOut: document.getElementById('ltOut').value
+  });
+  if(mock){
+    mockState.ldrThreshold=parseInt(p.get('ldrTh')); mockState.mq2Threshold=parseInt(p.get('mqTh'));
+    mockState.tempHigh=parseFloat(p.get('tHigh')); mockState.tempLow=parseFloat(p.get('tLow'));
+    mockState.lightTimeout=parseInt(p.get('ltOut')); render(mockState); return;
+  }
+  let url=(baseUrl? baseUrl : '') + '/api/config?'+p.toString();
+  await fetch(url, {method:'POST'});
+  fetchStatus();
+}
+setInterval(fetchStatus, 1500); fetchStatus();
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+Category,Component,Specification,Qty,Unit Price BDT (2025-26 avg),Line Total BDT,Source / Notes,ESP32 Pin
+Controller,ESP32 DevKit V1 (30-pin CH340),Wi-Fi + BT dual-core 240MHz,1,485,485,TechShopBD 485 / IoTNest 430 / Robotics 525,VIN/5V 3.3V GND
+Sensors,DHT11 Module (with pull-up),Temp 0-50C Hum 20-90%,1,130,130,BDTronics 179 / Dream RC 119,avg 130-150,GPIO4
+Sensors,HC-SR501 PIR Motion Sensor,4.5-20V 3.3V TTL out,2,95,190,RoboticsBD 92 / BDTronics 95 / Electronics 95,GPIO27 GPIO26
+Sensors,LDR Photoresistor (GL5528),Ambient light,2,12,24,Local market 10-15,GPIO34 GPIO35 via divider
+Sensors,Resistor 10kΩ 1/4W,LDR divider,2,3,6,Local,With LDR
+Sensors,MQ-2 Gas/Smoke Module,AO analog + DO digital,1,250,250,BD market 220-300 AO 5V,GPIO32 via 10k/20k
+Sensors,Resistor 10kΩ 1/4W,MQ-2 divider upper,1,3,3,Local,AO-10k-GPIO32
+Sensors,Resistor 20kΩ 1/4W,MQ-2 divider lower,1,3,3,Local,GPIO32-20k-GND
+Sensors,Magnetic Reed Switch (PS-3150),Door open/closed,1,45,45,Local 35-60,GPIO25 + GND
+Actuators,4-Channel 5V Relay Module (active-LOW),3.3V-compatible inputs,1,240,240,BD 220-280 confirm 3.3V trigger,GPIO13 GPIO18 GPIO19 GPIO21
+Actuators,5V Mini DC Fan 40mm,K kitchen exhaust + room fan,2,140,280,Local 120-160,Relay CH3 CH4
+Actuators,5V LED Module / LED + resistor,Living + bedroom lights,3,25,75,Local 15-30 (use 2-4),Relay CH1 CH2
+Actuators,Active Buzzer Module 5V (low-current),Alarm,1,35,35,Local 25-40,GPIO23
+Prototyping,830-point Breadboard,Central wiring,1,140,140,Local 120-150,
+Prototyping,Jumper Wire Set (M-M + M-F 65pcs),Interconnections,1,110,110,Local 80-120,
+Prototyping,Resistor Kit (10k 20k spares + 4.7k for DHT),Spares,1,20,20,,,
+Power,5V 2A DC Regulated Power Supply,2A with DC jack,1,220,220,Local 180-250,VIN
+Power,Micro USB Cable (for ESP32),Programming + serial,1,80,80,Local 60-100,
+Power,Electrolytic Capacitor 1000µF 16V,Bulk cap near VIN (recommended),1,15,15,Add for fan inrush,,
+Structure,Foam Board / Cardboard + Base,House model 4 rooms,1,600,600,Doc §17 900-1300 — use cardboard to save,,
+Structure,Glue / Tape / Paint / Paper,Model finishing,1,350,350,Doc §17,,
+,,,"HARDWARE SUBTOTAL (before structure)",,2859,,,
+,,,"STRUCTURE + FINISHING",,950,,,
+,,,"TOTAL (with structure)",,3809,,,
+,,,"TOTAL (hardware only no model)",,2859,,Target BDT 4000-5000 (§17)
+,,,"Contingency (10% extra wire / failed part)",,300,,Doc recommends 200-400,,
+,,,"GRAND TOTAL (with contingency)",,4109,,Within budget if cardboard used,
